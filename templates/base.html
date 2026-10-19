@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{% block title %}The Intelligent Scanning DEMO Tool{% endblock %}</title>
+    <title>{% block title %}Lector — Intelligent Scanning Tool{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -25,7 +25,10 @@
             class="navbar-logo"
           />
           <span class="navbar-brand-divider"></span>
-          <span class="navbar-title">The Intelligent Scanning DEMO Tool</span>
+          <span class="navbar-title">
+            <span class="navbar-title-name">Lector</span>
+            <span class="navbar-title-sub">Intelligent Scanning Tool</span>
+          </span>
         </a>
 
         {% if user.is_authenticated %}

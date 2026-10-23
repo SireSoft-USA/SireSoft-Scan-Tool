@@ -37,7 +37,9 @@ Har receipt ka apna 24 ghante ka clock hai, jo **us receipt ke upload ke waqt se
 - Receipt 3:00 baje upload hui → agle din 3:00 baje delete (History,
   PostgreSQL / Django Administration aur server par file, sab se).
 - Usi user ne 4:00 baje doosri receipt upload ki → woh agle din 4:00 baje delete.
-- User ka **account (email, password) delete nahin hota**, sirf receipts.
+- User ka **account (username, email, password)** bhi signup ke 24 ghante baad
+  PostgreSQL se delete ho jata hai (uski bachi hui receipts ke saath).
+  **Admin account kabhi delete nahin hota.**
 - Yeh limit **har receipt** par hai, admin ki receipts par bhi.
 
 History mein har receipt ke saath **Auto-Delete** column mein live countdown
@@ -45,7 +47,7 @@ chalta hai (hara → 3 ghante se kam par peela → 1 ghante se kam par laal).
 
 Yeh har minute khud chalta hai (worker mein bhi aur website mein bhi), koi cron
 nahin chahiye. Ghante badalne hon to `.env` mein `USER_DATA_TTL_HOURS=24` badlen.
-Haath se chalana ho: `python manage.py purge_expired_receipts`
+Haath se chalana ho: `python manage.py purge_expired_receipts` (receipts aur accounts dono)
 
 ## Login
 

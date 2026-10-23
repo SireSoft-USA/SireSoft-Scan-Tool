@@ -14,7 +14,8 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
-from apps.accounts.retention import purge_expired_receipts
+from apps.accounts.retention import (
+    purge_expired_accounts, purge_expired_receipts)
 from apps.receipts.models import Receipt
 from apps.receipts.services import (
     OLLAMA_BASE_URL,
@@ -124,6 +125,10 @@ class Command(BaseCommand):
         if deleted:
             self.stdout.write('Deleted %d receipt(s) whose 24 hours were up.'
                               % deleted)
+        accounts = purge_expired_accounts()
+        if accounts:
+            self.stdout.write('Deleted %d account(s) whose 24 hours were up.'
+                              % accounts)
 
     def _reset_orphans(self):
         """

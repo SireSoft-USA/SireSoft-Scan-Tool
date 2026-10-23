@@ -1,12 +1,16 @@
 """
-Delete every receipt a set time after it was uploaded.
+Delete every receipt, and every signed-up account, a set time after it was made.
 
 Each receipt has its own clock: one uploaded at 15:00 is removed at 15:00 the
 next day, one uploaded at 16:00 at 16:00 the next day. The row leaves
 PostgreSQL (so History and Django Administration no longer show it) and the
 receipt model's post_delete handler removes its uploaded and corrected files
-from disk. This applies to every receipt, the admin's included. User accounts
-(email and password) are never deleted.
+from disk. This applies to every receipt, the admin's included.
+
+Accounts work the same way, timed from signup: the user row (username, email,
+password hash) leaves PostgreSQL that long after it was created, taking any
+receipts it still has with it. Staff and superuser accounts are kept, so the
+admin made by `ensure_admin` is never removed.
 """
 
 import logging
@@ -31,6 +35,34 @@ def expired_receipts(now=None):
     from apps.receipts.models import Receipt
     cutoff = (now or timezone.now()) - data_lifetime()
     return Receipt.objects.filter(created_at__lte=cutoff)
+
+
+def account_expires_at(user):
+    """When `user`'s account will be deleted."""
+    return user.date_joined + data_lifetime()
+
+
+def expired_accounts(now=None):
+    from django.contrib.auth.models import User
+    cutoff = (now or timezone.now()) - data_lifetime()
+    return User.objects.filter(date_joined__lte=cutoff,
+                               is_staff=False, is_superuser=False)
+
+
+def purge_expired_accounts(now=None):
+    """Delete signed-up accounts past their lifetime. Returns how many went."""
+    deleted = 0
+    for user in expired_accounts(now):
+        # Cascades to the user's receipts; their post_delete handler removes
+        # the files.
+        try:
+            user.delete()
+            deleted += 1
+        except Exception:  # noqa: BLE001
+            logger.exception('Could not delete expired account #%s.', user.pk)
+    if deleted:
+        logger.info('Deleted %d expired account(s).', deleted)
+    return deleted
 
 
 def purge_expired_receipts(now=None):

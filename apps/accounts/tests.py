@@ -201,6 +201,39 @@ class RetentionTests(TestCase):
         self.assertEqual(purge_expired_receipts(now + timedelta(hours=1)), 1)
         self.assertFalse(Receipt.objects.exists())
 
+    def test_accounts_expire_24_hours_after_signup(self):
+        import os
+        from datetime import timedelta
+        from django.utils import timezone
+        from apps.accounts.retention import purge_expired_accounts
+        from apps.receipts.models import Receipt
+
+        now = timezone.now()
+        old = User.objects.create_user('old', email='old@example.com',
+                                       password='x')
+        new = User.objects.create_user('new', email='new@example.com',
+                                       password='x')
+        admin = User.objects.create_superuser('admin', password='x')
+        User.objects.filter(pk__in=[old.pk, admin.pk]).update(
+            date_joined=now - timedelta(hours=24, minutes=1))
+        User.objects.filter(pk=new.pk).update(
+            date_joined=now - timedelta(hours=23))
+        receipt = self.make_receipt(old, now - timedelta(hours=1))
+        path = receipt.file.path
+
+        self.assertEqual(purge_expired_accounts(now), 1)
+        self.assertFalse(User.objects.filter(pk=old.pk).exists())
+        self.assertFalse(Receipt.objects.filter(pk=receipt.pk).exists())
+        self.assertFalse(os.path.exists(path))
+        self.assertTrue(User.objects.filter(pk=new.pk).exists())
+        # The admin is never removed, however old.
+        self.assertTrue(User.objects.filter(pk=admin.pk).exists())
+
+        # An hour later the newer account's 24 hours are up too.
+        self.assertEqual(purge_expired_accounts(now + timedelta(hours=1)), 1)
+        self.assertEqual(list(User.objects.values_list('username', flat=True)),
+                         ['admin'])
+
     def test_admin_page_accepts_email(self):
         User.objects.create_superuser(
             'admin', email='admin@siresoft.com', password='Test-pass-123')

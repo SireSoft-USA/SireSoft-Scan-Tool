@@ -9,6 +9,13 @@
 </p>
 {% endif %}
 
+{% if access_ended %}
+<p class="login-success">
+  Your 24-hour access has ended and the account was deleted. Please sign up
+  again to continue.
+</p>
+{% endif %}
+
 {% if registered %}
 <p class="login-success">
   Account created. Sign in with your email and password.

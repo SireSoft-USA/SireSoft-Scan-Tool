@@ -87,12 +87,20 @@ A "Server Error (500)" page always has its cause in the website log.
 
 Uploaded files: `ls -lh ~/siresoft-scan-tool/media/receipts/`
 
-## 24-hour receipt deletion
+## 24-hour limit on accounts and receipts
 
-Every receipt is deleted 24 hours after its own upload - from History, from
-PostgreSQL (so from Django Administration too) and its file from disk. This
-applies to every receipt, the admin's included; accounts are kept. It runs
-every minute by itself; to run it by hand:
+Every signed-up user can sign in for 24 hours after signup only. Someone who
+signs up at 6:00 can sign in until 6:00 the next day; after that the right
+password no longer works, anyone still signed in is signed out on their next
+click, and the account (username, email, password) and its receipts are
+deleted from PostgreSQL. The login page then says the 24-hour access has
+ended, and the same email can sign up again for a new 24 hours. The admin
+(admin@siresoft.com, credentials in .env) has no limit and is never deleted.
+
+Every receipt is also deleted 24 hours after its own upload - from History,
+from PostgreSQL (so from Django Administration too) and its file from disk.
+This applies to every receipt, the admin's included. Both run every minute by
+themselves; to run them by hand:
 
     ./venv/bin/python manage.py purge_expired_receipts
 

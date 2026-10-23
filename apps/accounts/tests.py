@@ -244,6 +244,69 @@ class RetentionTests(TestCase):
                              fetch_redirect_response=False)
 
 
+class AccessLimitTests(TestCase):
+    """Each signed-up account can sign in for 24 hours after signup only."""
+
+    def setUp(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        self.user = User.objects.create_user(
+            'u@example.com', email='u@example.com', password='Str0ng-pass-99')
+        self.old = timezone.now() - timedelta(hours=24, minutes=1)
+
+    def expire(self, user):
+        User.objects.filter(pk=user.pk).update(date_joined=self.old)
+
+    def post_login(self, username, password='Str0ng-pass-99'):
+        # Through the view: the test client's template instrumentation
+        # crashes on Django 5.1 under Python 3.14.
+        from django.contrib.auth.models import AnonymousUser
+        from django.test import RequestFactory
+        from . import views
+        request = RequestFactory().post(
+            '/auth/login/', {'username': username, 'password': password})
+        request.user = AnonymousUser()
+        request.session = self.client.session
+        request._dont_enforce_csrf_checks = True
+        return views.login_view(request)
+
+    def test_can_sign_in_within_24_hours(self):
+        response = self.post_login('u@example.com')
+        self.assertEqual(response.status_code, 302)
+
+    def test_cannot_sign_in_after_24_hours(self):
+        self.expire(self.user)
+        response = self.post_login('u@example.com')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Your 24-hour access has ended')
+        self.assertFalse(User.objects.filter(pk=self.user.pk).exists())
+
+    def test_same_email_can_sign_up_again(self):
+        self.expire(self.user)
+        self.post_login('u@example.com')
+        response = self.client.post('/auth/register/', {
+            'email': 'u@example.com', 'password1': 'Str0ng-pass-99',
+            'password2': 'Str0ng-pass-99'})
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(User.objects.filter(email='u@example.com').exists())
+
+    def test_signed_in_user_is_signed_out_when_time_is_up(self):
+        self.client.force_login(self.user)
+        self.expire(self.user)
+        response = self.client.get('/history/')
+        self.assertRedirects(response, '/auth/login/',
+                             fetch_redirect_response=False)
+        self.assertNotIn('_auth_user_id', self.client.session)
+        self.assertFalse(User.objects.filter(pk=self.user.pk).exists())
+
+    def test_admin_has_no_time_limit(self):
+        admin = User.objects.create_superuser(
+            'admin', email='admin@siresoft.com', password='Admin-pass-99')
+        self.expire(admin)
+        response = self.post_login('admin@siresoft.com', 'Admin-pass-99')
+        self.assertEqual(response.status_code, 302)
+
+
 class StaleFormTests(TestCase):
     """A stale form lands on a usable page, never Django's bare 403."""
 

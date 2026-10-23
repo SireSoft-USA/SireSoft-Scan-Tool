@@ -110,7 +110,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTHENTICATION_BACKENDS = ['apps.accounts.backends.EmailOrUsernameBackend']
 
 # Every receipt - the admin's included - is deleted this many hours after it
-# was uploaded, each on its own clock. Accounts are never deleted.
+# was uploaded, each on its own clock. Every signed-up account can sign in for
+# this many hours after signup and is then deleted; the admin is kept.
 USER_DATA_TTL_HOURS = float(os.environ.get('USER_DATA_TTL_HOURS', '24'))
 
 LOGIN_URL = '/auth/login/'

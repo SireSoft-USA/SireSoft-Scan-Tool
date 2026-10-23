@@ -30,6 +30,22 @@ Project ke 3 hisse:
 | **Admin** (`admin@siresoft.com`) | **Sab users ki** sab receipts (History mein "Uploaded By" column ke saath) aur Django Administration |
 | **Aam user** | Sirf **apni** receipts |
 
+## Har user ki 24 ghante ki limit (sign up / sign in)
+
+Har user ke account ki **24 ghante ki limit** hai, jo **sign up ke waqt se** shuru hoti hai:
+
+- User ne 6:00 baje sign up kiya → woh agle din 6:00 baje tak hi sign in kar
+  sakta hai. Us ke baad sahi password se bhi login nahin hoga.
+- User ne 9:00 baje sign up kiya → agle din 9:00 baje tak hi.
+- 24 ghante poore hote hi account (username, email, password) aur us ki sab
+  receipts PostgreSQL se delete ho jati hain. Agar user us waqt login ho to
+  agle click par logout ho jata hai.
+- Login page par message aata hai: *"Your 24-hour access has ended and the
+  account was deleted. Please sign up again to continue."*
+- Wahi email se **dobara sign up** karke naya account bana sakta hai (phir se 24 ghante).
+- **Admin (`admin@siresoft.com`) par koi limit nahin.** Admin ke credentials
+  `.env` mein save rehte hain aur account kabhi delete nahin hota.
+
 ## 24 ghante baad data khud delete
 
 Har receipt ka apna 24 ghante ka clock hai, jo **us receipt ke upload ke waqt se** shuru hota hai:
@@ -38,8 +54,8 @@ Har receipt ka apna 24 ghante ka clock hai, jo **us receipt ke upload ke waqt se
   PostgreSQL / Django Administration aur server par file, sab se).
 - Usi user ne 4:00 baje doosri receipt upload ki → woh agle din 4:00 baje delete.
 - User ka **account (username, email, password)** bhi signup ke 24 ghante baad
-  PostgreSQL se delete ho jata hai (uski bachi hui receipts ke saath).
-  **Admin account kabhi delete nahin hota.**
+  PostgreSQL se delete ho jata hai (uski bachi hui receipts ke saath), upar
+  "Har user ki 24 ghante ki limit" dekhein. **Admin account kabhi delete nahin hota.**
 - Yeh limit **har receipt** par hai, admin ki receipts par bhi.
 
 History mein har receipt ke saath **Auto-Delete** column mein live countdown

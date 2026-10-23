@@ -1,9 +1,11 @@
 from django.contrib import admin
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.shortcuts import render, redirect
 from django.views.decorators.cache import never_cache
 from .forms import LoginForm, RegisterForm
+from .retention import account_has_expired
 
 
 @never_cache
@@ -13,11 +15,20 @@ def login_view(request):
     registered = False
     # Set by csrf_failure when a stale copy of this page was submitted.
     expired = request.session.pop('form_expired', False)
+    # Set when a signed-in account's 24 hours ran out (see middleware.py).
+    access_ended = request.session.pop('access_ended', False)
     if request.method == 'POST':
         form = LoginForm(request, data=request.POST)
         if form.is_valid():
             login(request, form.get_user())
             return redirect(request.GET.get('next', '/'))
+        user = User.objects.filter(
+            username=form.cleaned_data.get('username')).first()
+        if user and account_has_expired(user):
+            # Its 24 hours are up: remove it now so the email can sign up
+            # again straight away.
+            user.delete()
+            access_ended = True
     else:
         # Set by a sign-up that just finished, so the new user lands here
         # with their address already filled in.
@@ -26,7 +37,7 @@ def login_view(request):
         form = LoginForm(request, initial={'username': email})
     return render(request, 'accounts/login.html',
                   {'form': form, 'registered': registered,
-                   'expired': expired})
+                   'expired': expired, 'access_ended': access_ended})
 
 
 @never_cache

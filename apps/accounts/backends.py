@@ -1,6 +1,8 @@
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.models import User
 
+from .retention import account_has_expired
+
 
 class EmailOrUsernameBackend(ModelBackend):
     """
@@ -20,3 +22,9 @@ class EmailOrUsernameBackend(ModelBackend):
                 username = matches[0].get_username()
         return super().authenticate(
             request, username=username, password=password, **kwargs)
+
+    def user_can_authenticate(self, user):
+        # Each signed-up account may sign in for 24 hours only; after that
+        # the right password no longer works and a new sign-up is needed.
+        return (super().user_can_authenticate(user)
+                and not account_has_expired(user))

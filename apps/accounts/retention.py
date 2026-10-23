@@ -11,6 +11,10 @@ Accounts work the same way, timed from signup: the user row (username, email,
 password hash) leaves PostgreSQL that long after it was created, taking any
 receipts it still has with it. Staff and superuser accounts are kept, so the
 admin made by `ensure_admin` is never removed.
+
+Access ends at the deadline itself, not at the next purge: an expired account
+cannot sign in (see backends.py) and a signed-in one is signed out on its next
+request (see middleware.py). After that the email is free to sign up again.
 """
 
 import logging
@@ -40,6 +44,13 @@ def expired_receipts(now=None):
 def account_expires_at(user):
     """When `user`'s account will be deleted."""
     return user.date_joined + data_lifetime()
+
+
+def account_has_expired(user, now=None):
+    """True once a signed-up account's time is up. Never for the admin."""
+    if user.is_staff or user.is_superuser:
+        return False
+    return account_expires_at(user) <= (now or timezone.now())
 
 
 def expired_accounts(now=None):
